@@ -22,7 +22,32 @@ export default async function handler(req, res) {
   const ONDATO_CONFIG = {
     clientId: process.env.ONDATO_CLIENT_ID || 'supernovae.amlscreening',
     clientSecret: process.env.ONDATO_CLIENT_SECRET || 'fce294d19c308d049ee83a121165b2b8715f0ac26abd85b57332d0f6b367f1d7',
+    tokenUrl: 'https://id.ondato.com/connect/token',
     baseUrl: process.env.ONDATO_BASE_URL || 'https://kycapi.ondato.com/v1/identity-verifications'
+  }
+
+  // Function to get OAuth access token
+  async function getAccessToken() {
+    const tokenResponse = await fetch(ONDATO_CONFIG.tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: ONDATO_CONFIG.clientId,
+        client_secret: ONDATO_CONFIG.clientSecret,
+        scope: 'kyc_api'
+      })
+    })
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text()
+      throw new Error(`Token request failed: ${tokenResponse.status} ${errorText}`)
+    }
+
+    const tokenData = await tokenResponse.json()
+    return tokenData.access_token
   }
 
   try {
@@ -44,13 +69,17 @@ export default async function handler(req, res) {
       threshold
     })
 
+    // Get OAuth access token
+    console.log('🔐 Getting OAuth access token...')
+    const accessToken = await getAccessToken()
+    console.log('✅ Access token obtained')
+
     // Make request to Ondato API
     const response = await fetch(ONDATO_CONFIG.baseUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ONDATO_CONFIG.clientSecret}`,
-        'X-Client-Id': ONDATO_CONFIG.clientId,
+        'Authorization': `Bearer ${accessToken}`,
         'Accept': 'application/json',
         'User-Agent': 'Vercel-Ondato-Proxy/1.0'
       },
