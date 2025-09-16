@@ -15,38 +15,34 @@ interface SearchHistory extends SearchParams {
   id: string
 }
 
-interface OndatoResult {
-  success?: boolean
-  matches?: Array<{
-    id: string
-    name: string
-    matchScore: number
-    listType: string
-    reason: string
-    country: string
-    dateAdded: string
-    status: string
-    details?: {
-      aliases?: string[]
-      description?: string
-      source?: string
-      lastUpdated?: string
-    }
-  }>
-  searchInfo?: {
-    query: string
-    type: string
-    threshold: number
-    totalLists?: number
-    searchTime?: string
-    timestamp: string
-    message?: string
-    proxiedBy?: string
-  }
-  error?: string
-  details?: string
-  timestamp?: string
-  type?: string
+interface ScreeningMatch {
+  entityId: string;               // ID of the matched entity / person in the sanctions list
+  name: string;                   // Matched name
+  listName: string;               // Which sanctions/PEP/Watchlist the match is from
+  matchScore: number;             // Similarity score (0-100 or 0-1) if relevant
+  type: "personne_physique" | "entite_legale"; // what the match is (person or entity)
+  country?: string;               // Country of the matched record
+  additionalInfo?: {              // Optional extra metadata
+    birthYear?: number;
+    aliases?: string[];
+    address?: string;
+    sourceDate?: string;          // When the list was last updated for that record
+  };
+}
+
+interface OndatoScreeningResponse {
+  requestId: string;              // Unique identifier for this screening request
+  type: "personne_physique" | "entite_legale";
+  fullName: string;               // Full name submitted
+  country?: string;               // Country (if applicable)
+  birthYear?: number;             // Birth year (if applicable)
+  threshold: number;              // The threshold used
+  timestamp: string;              // ISO-8601 datetime when the screening was done
+
+  matches: ScreeningMatch[];      // Array of matches found
+
+  status: "found" | "not_found" | "error";
+  errorMessage?: string;          // If status = "error", optional error description
 }
 
 const COUNTRIES = [
@@ -93,7 +89,7 @@ export default function IndexPage() {
     threshold: 50
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [results, setResults] = useState<OndatoResult | null>(null)
+  const [results, setResults] = useState<OndatoScreeningResponse | null>(null)
   const [history, setHistory] = useState<SearchHistory[]>([])
 
   useEffect(() => {
@@ -466,21 +462,125 @@ export default function IndexPage() {
               <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-blue-50/30 -z-10" />
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg">
-                  {results.error ? (
+                  {results.status === 'error' ? (
                     <AlertCircle className="w-6 h-6 text-white" />
+                  ) : results.status === 'found' ? (
+                    <Shield className="w-6 h-6 text-white" />
                   ) : (
                     <CheckCircle className="w-6 h-6 text-white" />
                   )}
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800">
-                  {results.error ? 'Erreur' : 'Résultats de la recherche'}
+                  {results.status === 'error' ? 'Erreur' :
+                   results.status === 'found' ? `${results.matches.length} résultat${results.matches.length > 1 ? 's' : ''} trouvé${results.matches.length > 1 ? 's' : ''}` :
+                   'Aucun résultat trouvé'}
                 </h2>
               </div>
-              <div className="bg-slate-50/80 backdrop-blur-sm rounded-xl p-6 border border-slate-200/50">
-                <pre className="text-sm text-slate-700 overflow-auto max-h-96 font-mono leading-relaxed">
-                  {JSON.stringify(results, null, 2)}
-                </pre>
+
+              {/* Request Info */}
+              <div className="bg-slate-50/80 backdrop-blur-sm rounded-xl p-6 border border-slate-200/50 mb-6">
+                <h3 className="text-lg font-semibold text-slate-800 mb-4">Informations de la recherche</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-slate-500">Type:</span>
+                    <div className="font-medium">{results.type === 'personne_physique' ? 'Personne physique' : 'Entité légale'}</div>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Nom:</span>
+                    <div className="font-medium">{results.fullName}</div>
+                  </div>
+                  {results.country && (
+                    <div>
+                      <span className="text-slate-500">Pays:</span>
+                      <div className="font-medium">{results.country}</div>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-slate-500">Seuil:</span>
+                    <div className="font-medium">{results.threshold}%</div>
+                  </div>
+                </div>
               </div>
+
+              {/* Error Message */}
+              {results.status === 'error' && results.errorMessage && (
+                <div className="bg-red-50/80 backdrop-blur-sm rounded-xl p-6 border border-red-200/50 mb-6">
+                  <h3 className="text-lg font-semibold text-red-800 mb-2">Message d'erreur</h3>
+                  <p className="text-red-700">{results.errorMessage}</p>
+                </div>
+              )}
+
+              {/* Matches */}
+              {results.status === 'found' && results.matches.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-slate-800">Correspondances trouvées</h3>
+                  {results.matches.map((match, index) => (
+                    <div key={match.entityId} className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-slate-200/50">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h4 className="text-lg font-semibold text-slate-800">{match.name}</h4>
+                          <p className="text-slate-600">{match.listName}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-blue-600">{(match.matchScore * 100).toFixed(1)}%</div>
+                          <div className="text-sm text-slate-500">Score</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-slate-500">Type:</span>
+                          <div className="font-medium">{match.type === 'personne_physique' ? 'Personne physique' : 'Entité légale'}</div>
+                        </div>
+                        {match.country && (
+                          <div>
+                            <span className="text-slate-500">Pays:</span>
+                            <div className="font-medium">{match.country}</div>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-slate-500">ID Entité:</span>
+                          <div className="font-mono text-xs">{match.entityId}</div>
+                        </div>
+                      </div>
+                      {match.additionalInfo && (
+                        <div className="mt-4 pt-4 border-t border-slate-200/50">
+                          <h5 className="font-medium text-slate-700 mb-2">Informations supplémentaires</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            {match.additionalInfo.birthYear && (
+                              <div>
+                                <span className="text-slate-500">Année de naissance:</span>
+                                <div className="font-medium">{match.additionalInfo.birthYear}</div>
+                              </div>
+                            )}
+                            {match.additionalInfo.address && (
+                              <div>
+                                <span className="text-slate-500">Adresse:</span>
+                                <div className="font-medium">{match.additionalInfo.address}</div>
+                              </div>
+                            )}
+                            {match.additionalInfo.aliases && match.additionalInfo.aliases.length > 0 && (
+                              <div className="md:col-span-2">
+                                <span className="text-slate-500">Aliases:</span>
+                                <div className="font-medium">{match.additionalInfo.aliases.join(', ')}</div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Raw JSON for debugging */}
+              <details className="mt-6">
+                <summary className="cursor-pointer text-slate-600 hover:text-slate-800">Données brutes (debug)</summary>
+                <div className="bg-slate-50/80 backdrop-blur-sm rounded-xl p-6 border border-slate-200/50 mt-2">
+                  <pre className="text-sm text-slate-700 overflow-auto max-h-96 font-mono leading-relaxed">
+                    {JSON.stringify(results, null, 2)}
+                  </pre>
+                </div>
+              </details>
             </motion.div>
           )}
         </AnimatePresence>

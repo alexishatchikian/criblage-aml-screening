@@ -120,9 +120,16 @@ export default async function handler(req, res) {
       }
 
       return res.status(response.status).json({
-        error: userMessage,
-        details: `HTTP ${response.status}: ${errorText}`,
-        timestamp: new Date().toISOString()
+        requestId: `error_${Date.now()}`,
+        type: type === 'person' ? 'personne_physique' : 'entite_legale',
+        fullName,
+        country: country || undefined,
+        birthYear: birthYear ? parseInt(birthYear) : undefined,
+        threshold: threshold || 50,
+        timestamp: new Date().toISOString(),
+        matches: [],
+        status: 'error',
+        errorMessage: userMessage
       })
     }
 
@@ -130,15 +137,36 @@ export default async function handler(req, res) {
     const data = await response.json()
     console.log('✅ Ondato API Success:', data)
 
-    return res.status(200).json({
-      success: true,
-      ...data,
-      searchInfo: {
-        ...data.searchInfo,
-        proxiedBy: 'Vercel',
-        timestamp: new Date().toISOString()
-      }
-    })
+    // Transform Ondato response to match your schema
+    const transformedResponse = {
+      requestId: data.id || `req_${Date.now()}`,
+      type: type === 'person' ? 'personne_physique' : 'entite_legale',
+      fullName,
+      country: country || undefined,
+      birthYear: birthYear ? parseInt(birthYear) : undefined,
+      threshold: threshold || 50,
+      timestamp: new Date().toISOString(),
+
+      matches: (data.matches || data.screeningResult?.matches || []).map(match => ({
+        entityId: match.id || match.entityId || `entity_${Math.random().toString(36).substr(2, 9)}`,
+        name: match.name || match.fullName || match.matchedName,
+        listName: match.listName || match.source || match.listType || 'Unknown List',
+        matchScore: match.score || match.matchScore || match.similarity || 0,
+        type: match.type === 'individual' || match.entityType === 'person' ? 'personne_physique' : 'entite_legale',
+        country: match.country || match.nationality || undefined,
+        additionalInfo: {
+          birthYear: match.birthYear || match.dateOfBirth ? new Date(match.dateOfBirth).getFullYear() : undefined,
+          aliases: match.aliases || match.alternativeNames || undefined,
+          address: match.address || match.location || undefined,
+          sourceDate: match.sourceDate || match.lastUpdated || undefined
+        }
+      })),
+
+      status: data.matches?.length > 0 || data.screeningResult?.matches?.length > 0 ? 'found' : 'not_found',
+      errorMessage: undefined
+    }
+
+    return res.status(200).json(transformedResponse)
 
   } catch (error) {
     console.error('❌ Server Error:', error)
@@ -156,10 +184,16 @@ export default async function handler(req, res) {
     }
 
     return res.status(statusCode).json({
-      error: errorMessage,
-      details: error.message,
+      requestId: `error_${Date.now()}`,
+      type: type === 'person' ? 'personne_physique' : 'entite_legale',
+      fullName: fullName || 'Unknown',
+      country: country || undefined,
+      birthYear: birthYear ? parseInt(birthYear) : undefined,
+      threshold: threshold || 50,
       timestamp: new Date().toISOString(),
-      type: 'server_error'
+      matches: [],
+      status: 'error',
+      errorMessage: errorMessage
     })
   }
 }
