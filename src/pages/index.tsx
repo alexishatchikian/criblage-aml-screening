@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Play, Search, User, Building, Clock, ChevronDown, Loader2, AlertCircle, CheckCircle, Globe, Calendar, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -16,8 +16,37 @@ interface SearchHistory extends SearchParams {
 }
 
 interface OndatoResult {
-  // Define based on actual Ondato API response structure
-  [key: string]: any
+  success?: boolean
+  matches?: Array<{
+    id: string
+    name: string
+    matchScore: number
+    listType: string
+    reason: string
+    country: string
+    dateAdded: string
+    status: string
+    details?: {
+      aliases?: string[]
+      description?: string
+      source?: string
+      lastUpdated?: string
+    }
+  }>
+  searchInfo?: {
+    query: string
+    type: string
+    threshold: number
+    totalLists?: number
+    searchTime?: string
+    timestamp: string
+    message?: string
+    proxiedBy?: string
+  }
+  error?: string
+  details?: string
+  timestamp?: string
+  type?: string
 }
 
 const COUNTRIES = [
