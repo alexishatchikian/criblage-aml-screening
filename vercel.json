@@ -3,10 +3,5 @@
     "api/aml-screening.js": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "ONDATO_CLIENT_ID": "@ondato_client_id",
-    "ONDATO_CLIENT_SECRET": "@ondato_client_secret",
-    "ONDATO_BASE_URL": "@ondato_base_url"
   }
 }

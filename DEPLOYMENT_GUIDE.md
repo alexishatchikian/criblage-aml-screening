@@ -17,20 +17,29 @@
 
 ### 2. Configure Environment Variables
 
-**Important**: The `.env` file in your project is ignored by Git for security reasons. You need to manually add these environment variables in Vercel:
+**Important**: You must manually add environment variables in Vercel dashboard. The `.env` file is ignored by Git for security.
 
-In the Vercel dashboard, go to your project settings and add these environment variables:
+**Step-by-step:**
 
-```
-ONDATO_CLIENT_ID=supernovae.amlscreening
-ONDATO_CLIENT_SECRET=fce294d19c308d049ee83a121165b2b8715f0ac26abd85b57332d0f6b367f1d7
-ONDATO_BASE_URL=https://kycapi.ondato.com/v1/aml-screening
-```
+1. **In Vercel dashboard**, go to your project
+2. **Click "Settings"** tab
+3. **Click "Environment Variables"** in the sidebar
+4. **Add these 3 variables one by one:**
 
-**Note**:
-- These variables are not committed to Git for security
+| Name | Value |
+|------|-------|
+| `ONDATO_CLIENT_ID` | `supernovae.amlscreening` |
+| `ONDATO_CLIENT_SECRET` | `fce294d19c308d049ee83a121165b2b8715f0ac26abd85b57332d0f6b367f1d7` |
+| `ONDATO_BASE_URL` | `https://kycapi.ondato.com/v1/aml-screening` |
+
+5. **Set Environment** to "Production, Preview, and Development"
+6. **Click "Save"** for each variable
+
+**Important Notes**:
+- Environment variables are NOT in `vercel.json` (security)
 - They must be manually configured in Vercel dashboard
-- The serverless function will read them from `process.env`
+- The serverless function reads them from `process.env`
+- After adding variables, redeploy your project
 
 ### 3. Deploy
 
