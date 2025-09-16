@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   const ONDATO_CONFIG = {
     clientId: process.env.ONDATO_CLIENT_ID || 'supernovae.amlscreening',
     clientSecret: process.env.ONDATO_CLIENT_SECRET || 'fce294d19c308d049ee83a121165b2b8715f0ac26abd85b57332d0f6b367f1d7',
-    baseUrl: process.env.ONDATO_BASE_URL || 'https://kycapi.ondato.com/v1/aml-screening'
+    baseUrl: process.env.ONDATO_BASE_URL || 'https://kycapi.ondato.com/v1/identity-verifications'
   }
 
   try {
@@ -55,11 +55,17 @@ export default async function handler(req, res) {
         'User-Agent': 'Vercel-Ondato-Proxy/1.0'
       },
       body: JSON.stringify({
-        type: type === 'person' ? 'individual' : 'entity', // Map to Ondato API format
-        name: fullName,
-        country: country || undefined,
-        birthYear: birthYear ? parseInt(birthYear) : undefined,
-        threshold: threshold || 50
+        setupId: ONDATO_CONFIG.clientId,
+        type: type === 'person' ? 'individual' : 'entity',
+        personalInformation: {
+          name: fullName,
+          country: country || undefined,
+          birthYear: birthYear ? parseInt(birthYear) : undefined
+        },
+        amlSettings: {
+          threshold: threshold || 50,
+          screeningType: 'sanctions_pep_adverse_media'
+        }
       })
     })
 

@@ -30,7 +30,7 @@
 |------|-------|
 | `ONDATO_CLIENT_ID` | `supernovae.amlscreening` |
 | `ONDATO_CLIENT_SECRET` | `fce294d19c308d049ee83a121165b2b8715f0ac26abd85b57332d0f6b367f1d7` |
-| `ONDATO_BASE_URL` | `https://kycapi.ondato.com/v1/aml-screening` |
+| `ONDATO_BASE_URL` | `https://kycapi.ondato.com/v1/identity-verifications` |
 
 5. **Set Environment** to "Production, Preview, and Development"
 6. **Click "Save"** for each variable
