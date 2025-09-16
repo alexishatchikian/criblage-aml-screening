@@ -170,9 +170,16 @@ export default function IndexPage() {
       }
 
       setResults({
-        error: errorMessage,
-        details: error instanceof Error ? error.message : 'Erreur inconnue',
-        timestamp: new Date().toISOString()
+        requestId: `error_${Date.now()}`,
+        type: searchParams.type === 'person' ? 'personne_physique' : 'entite_legale',
+        fullName: searchParams.fullName,
+        country: searchParams.country,
+        birthYear: searchParams.birthYear,
+        threshold: searchParams.threshold,
+        timestamp: new Date().toISOString(),
+        matches: [],
+        status: 'error',
+        errorMessage: errorMessage
       })
     } finally {
       setIsLoading(false)
@@ -514,7 +521,7 @@ export default function IndexPage() {
               {results.status === 'found' && results.matches.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-slate-800">Correspondances trouvées</h3>
-                  {results.matches.map((match, index) => (
+                  {results.matches.map((match) => (
                     <div key={match.entityId} className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-slate-200/50">
                       <div className="flex justify-between items-start mb-4">
                         <div>
