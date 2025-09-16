@@ -17,6 +17,8 @@
 
 ### 2. Configure Environment Variables
 
+**Important**: The `.env` file in your project is ignored by Git for security reasons. You need to manually add these environment variables in Vercel:
+
 In the Vercel dashboard, go to your project settings and add these environment variables:
 
 ```
@@ -25,7 +27,10 @@ ONDATO_CLIENT_SECRET=fce294d19c308d049ee83a121165b2b8715f0ac26abd85b57332d0f6b36
 ONDATO_BASE_URL=https://kycapi.ondato.com/v1/aml-screening
 ```
 
-**Important**: These environment variables are essential for the API proxy to work.
+**Note**:
+- These variables are not committed to Git for security
+- They must be manually configured in Vercel dashboard
+- The serverless function will read them from `process.env`
 
 ### 3. Deploy
 
